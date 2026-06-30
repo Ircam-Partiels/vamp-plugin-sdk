@@ -107,6 +107,10 @@ public:
 
     FeatureSet getRemainingFeatures();
 
+    VampPluginHandle getPluginHandle() {
+        return m_handle;
+    }
+
 protected:
     void convertFeatures(VampFeatureList *, FeatureSet &);
 
