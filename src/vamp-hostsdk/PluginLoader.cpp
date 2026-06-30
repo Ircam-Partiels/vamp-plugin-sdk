@@ -45,6 +45,7 @@
 #include "Files.h"
 
 #include <fstream>
+#include <mutex>
 
 using namespace std;
 
@@ -114,6 +115,7 @@ protected:
     map<PluginKey, PluginCategoryHierarchy> m_taxonomy;
     void generateTaxonomy();
 
+    std::mutex m_mutex;
     map<Plugin *, void *> m_pluginLibraryHandleMap;
 
     bool decomposePluginKey(PluginKey key,
@@ -446,7 +448,9 @@ PluginLoader::Impl::loadPlugin(PluginKey key,
 
             Plugin *adapter = new PluginDeletionNotifyAdapter(plugin, this);
 
+            std::unique_lock<std::mutex> lock(m_mutex);
             m_pluginLibraryHandleMap[adapter] = handle;
+            lock.unlock();
 
             if (adapterFlags & ADAPT_INPUT_DOMAIN) {
                 if (adapter->getInputDomain() == Plugin::FrequencyDomain) {
@@ -566,6 +570,7 @@ PluginLoader::Impl::generateTaxonomy()
 void
 PluginLoader::Impl::pluginDeleted(PluginDeletionNotifyAdapter *adapter)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     void *handle = m_pluginLibraryHandleMap[adapter];
     if (!handle) return;
 
@@ -577,6 +582,7 @@ PluginLoader::Impl::pluginDeleted(PluginDeletionNotifyAdapter *adapter)
             return;
         }
     }
+    lock.unlock();
     
     Files::unloadLibrary(handle);
 }
