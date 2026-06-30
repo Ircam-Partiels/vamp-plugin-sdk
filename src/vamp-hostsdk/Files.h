@@ -68,6 +68,9 @@ public:
 
     static bool isNonNative32Bit();
     static bool getEnvUtf8(std::string variable, std::string &value);
+    
+    static std::string getCurrentWorkingDirectory();
+    static bool setCurrentWorkingDirectory(std::string const& path);
 };
 
 #endif

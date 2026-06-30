@@ -468,6 +468,25 @@ PluginLoader::Impl::loadPlugin(PluginKey key,
         return 0;
     }
     
+    class ScopedWorkingDirectory
+    {
+    public:
+        ScopedWorkingDirectory(std::string const& path)
+        : m_saved_path(Files::getCurrentWorkingDirectory())
+        {
+            Files::setCurrentWorkingDirectory(path);
+        }
+        
+        ~ScopedWorkingDirectory()
+        {
+            Files::setCurrentWorkingDirectory(m_saved_path);
+        }
+    private:
+        std::string const m_saved_path;
+    };
+    
+    ScopedWorkingDirectory swd(fullPath);
+    
     void *handle = Files::loadLibrary(fullPath);
     if (!handle) return 0;
     

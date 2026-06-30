@@ -53,6 +53,7 @@
 #include <cstdlib>
 #include <dirent.h>
 #include <dlfcn.h>
+#include <unistd.h>
 
 #ifdef __APPLE__
 #include <sys/xattr.h>
@@ -447,5 +448,60 @@ Files::getEnvUtf8(std::string variable, std::string &value)
     value = val;
     return true;
     
+#endif
+}
+
+std::string
+Files::getCurrentWorkingDirectory()
+{
+#ifdef _WIN32
+    DWORD size = MAX_PATH;
+    for (;;)
+    {
+        std::vector<WCHAR> buffer(size);
+        DWORD result = GetCurrentDirectoryW(size, buffer.data());
+        if (result == 0) {
+            return {};
+        }
+        if (result < size) {
+            int utf8Size = WideCharToMultiByte(CP_UTF8, 0, (LPCWCH)buffer.data(), -1, nullptr, 0, nullptr, nullptr);
+            if (utf8Size == 0) {
+                return {};
+            }
+            std::string path(utf8Size - 1, '\0');
+            if (WideCharToMultiByte(CP_UTF8, 0, (LPCWCH)buffer.data(), -1, (LPSTR)path.data(), utf8Size, nullptr, nullptr) == 0) {
+                return {};
+            }
+            return path;
+        }
+        size = result + 1;
+    }
+#else
+    std::vector<char> heapBuffer;
+    char localBuffer[1024];
+    auto cwd = getcwd(localBuffer, sizeof (localBuffer) - 1);
+    size_t bufferSize = 4096;
+    while (cwd == nullptr && errno == ERANGE) {
+        heapBuffer.resize(bufferSize);
+        cwd = getcwd(heapBuffer.data(), bufferSize - 1);
+        bufferSize += 1024;
+    }
+    return std::string(cwd);
+#endif
+}
+
+bool
+Files::setCurrentWorkingDirectory(std::string const& path)
+{
+#ifdef _WIN32
+    const int size = MultiByteToWideChar(CP_UTF8, 0, path.data(), (int)path.size(), nullptr, 0);
+    if (size == 0) {
+        return false;
+    }
+    std::wstring wpath(size, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, path.data(), (int)path.size(), (LPWSTR)wpath.data(), size);
+    return SetCurrentDirectoryW(wpath.c_str()) != FALSE;
+#else
+    return chdir(path.c_str()) == 0;
 #endif
 }
