@@ -124,6 +124,10 @@ public:
         return nullptr;
     }
 
+    Plugin *getPlugin() {
+        return m_plugin;
+    }
+
     /**
      * Disown the wrapped plugin, so that we no longer delete it on
      * our own destruction. The identity of the wrapped plugin is
