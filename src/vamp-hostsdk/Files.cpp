@@ -55,7 +55,9 @@
 #include <dlfcn.h>
 
 #ifdef __APPLE__
+#include <sys/xattr.h>
 #define PLUGIN_SUFFIX "dylib"
+bool Files::ignoreQuarantine = false;
 #else /* ! __APPLE__ */
 #define PLUGIN_SUFFIX "so"
 #endif /* ! __APPLE__ */
@@ -176,6 +178,25 @@ Files::loadLibrary(string path)
              << path << "\": error code " << GetLastError() << endl;
     }
 #else
+
+#ifdef __APPLE__
+    if(ignoreQuarantine)
+    {
+        auto valLength = getxattr(path.c_str(), "com.apple.quarantine", nullptr, 0, 0, 0);
+        if(valLength > 0)
+        {
+            char attrValue[2048];
+            valLength = getxattr(path.c_str(), "com.apple.quarantine", attrValue, static_cast<size_t>(valLength), 0, 0);
+            if(valLength > 0 && std::string(attrValue).substr(0, 4) != "00c1")
+            {
+                cerr << "Vamp::HostExt: Unable to load library \"" << path << "\": " << "Plugin in quarantine!" << endl;
+                return NULL;
+            }
+        }
+    }
+
+#endif
+
     handle = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
     if (!handle) {
         cerr << "Vamp::HostExt: Unable to load library \""

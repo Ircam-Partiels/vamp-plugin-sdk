@@ -259,6 +259,20 @@ public:
      * given plugin will be loaded (if available).
      */
     std::string getLibraryPathForPlugin(PluginKey plugin);
+    
+    /**
+     * Set the file path for the blacklist file
+     */
+    void setBlackListFile(std::string const& path);
+    
+    /**
+     * Return the file path to the blacklist file
+     */
+    std::string getBlackListFile() const;
+
+#ifdef __APPLE__
+    static void setIgnoreQuanrantineLibs(bool state);
+#endif
 
 protected:
     PluginLoader();

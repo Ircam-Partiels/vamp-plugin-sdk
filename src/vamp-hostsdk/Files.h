@@ -55,6 +55,9 @@ public:
     };
     static std::vector<std::string> listLibraryFilesMatching(Filter);
 
+#ifdef __APPLE__
+    static bool ignoreQuarantine;
+#endif
     static void *loadLibrary(std::string filename);
     static void unloadLibrary(void *);
     static void *lookupInLibrary(void *, const char *symbol);

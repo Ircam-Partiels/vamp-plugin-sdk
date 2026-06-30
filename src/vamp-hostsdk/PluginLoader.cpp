@@ -46,6 +46,7 @@
 
 #include <fstream>
 #include <mutex>
+#include <sstream>
 
 using namespace std;
 
@@ -74,6 +75,8 @@ public:
     PluginCategoryHierarchy getPluginCategory(PluginKey key);
 
     string getLibraryPathForPlugin(PluginKey key);
+    void setBlackListFile(std::string const& path);
+    std::string getBlackListFile() const;
 
     static void setInstanceToClean(PluginLoader *instance);
 
@@ -117,7 +120,8 @@ protected:
 
     std::mutex m_mutex;
     map<Plugin *, void *> m_pluginLibraryHandleMap;
-
+    std::string m_blacklist;
+    
     bool decomposePluginKey(PluginKey key,
                             string &libraryName, string &identifier);
 
@@ -301,9 +305,33 @@ PluginLoader::Impl::enumeratePlugins(Enumeration enumeration)
 
     vector<PluginKey> added;
     
+    ifstream pblf(m_blacklist);
+    string blacklist;
+    if(pblf.is_open())
+    {
+        stringstream buffer;
+        buffer << pblf.rdbuf();
+        blacklist = buffer.str();
+        pblf.close();
+    }
+
     for (size_t i = 0; i < fullPaths.size(); ++i) {
 
         string fullPath = fullPaths[i];
+        if(blacklist.find(fullPath) != string::npos)
+        {
+            cerr << "Vamp::HostExt::PluginLoader: "
+            << "dynamic library ignored \""
+            << fullPath << "\"" << endl;
+            continue;
+        }
+        std::ofstream oblf(m_blacklist, std::ofstream::out | std::ofstream::trunc);
+        if(oblf.is_open())
+        {
+            oblf << blacklist << "\n" << fullPath << "\n";
+            oblf.close();
+        }
+        
         void *handle = Files::loadLibrary(fullPath);
         if (!handle) continue;
             
@@ -354,6 +382,12 @@ PluginLoader::Impl::enumeratePlugins(Enumeration enumeration)
         m_allPluginsEnumerated = true;
     }
 
+    std::ofstream oblf(m_blacklist, std::ofstream::out | std::ofstream::trunc);
+    if(oblf.is_open())
+    {
+        oblf << blacklist;
+        oblf.close();
+    }
     return added;
 }
 
@@ -405,6 +439,18 @@ PluginLoader::Impl::getLibraryPathForPlugin(PluginKey plugin)
     return m_pluginLibraryNameMap[plugin];
 }    
 
+void 
+PluginLoader::Impl::setBlackListFile(std::string const& path)
+{
+    m_blacklist = path;
+}
+
+std::string 
+PluginLoader::Impl::getBlackListFile() const
+{
+    return m_blacklist;
+}
+    
 Plugin *
 PluginLoader::Impl::loadPlugin(PluginKey key,
                                float inputSampleRate, int adapterFlags)
@@ -606,6 +652,23 @@ PluginLoader::Impl::PluginDeletionNotifyAdapter::~PluginDeletionNotifyAdapter()
     m_plugin = 0;
 
     if (m_loader) m_loader->pluginDeleted(this);
+}
+
+#ifdef __APPLE__
+void PluginLoader::setIgnoreQuanrantineLibs(bool state)
+{
+    Files::ignoreQuarantine = state;
+}
+#endif
+    
+void PluginLoader::setBlackListFile(std::string const& path)
+{
+    m_impl->setBlackListFile(path);
+}
+    
+std::string PluginLoader::getBlackListFile() const
+{
+    return m_impl->getBlackListFile();
 }
 
 }
