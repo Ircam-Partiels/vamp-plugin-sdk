@@ -42,6 +42,8 @@
 
 #include <cstring>
 
+#define PLUGIN_BUNDLE_SUFFIX "vamp"
+
 #ifdef _WIN32
 
 #include <windows.h>
@@ -73,6 +75,30 @@ Files::listLibraryFiles()
     return listLibraryFilesMatching(Filter());
 }
 
+
+static std::string
+toFullPath(string const& path)
+{
+    auto const slash = path.find_last_of("/\\");
+    auto const start = (slash == std::string::npos) ? 0 : slash + 1;
+    auto const root = path.substr(0, start);
+    auto const fileext = path.substr(start);
+    auto const dot = fileext.find_last_of(".");
+    auto const name = fileext.substr(0, dot);
+    auto const ext = fileext.substr(dot);
+    if(ext.find(PLUGIN_BUNDLE_SUFFIX) == 1)
+    {
+#ifdef _WIN32
+        return path + "\\Content\\x86_64-win\\" + name;
+#elif __APPLE__
+        return path + "/Contents/MacOS/" + name;
+#else
+        return path + "/Contents/x86_64-linux/" + name;
+#endif
+    }
+    return path;
+}
+
 vector<string>
 Files::listLibraryFilesMatching(Filter filter)
 {
@@ -95,6 +121,8 @@ Files::listLibraryFilesMatching(Filter filter)
     for (size_t i = 0; i < path.size(); ++i) {
         
         vector<string> files = listFiles(path[i], PLUGIN_SUFFIX);
+        vector<string> bundles = listFiles(path[i], PLUGIN_BUNDLE_SUFFIX);
+        files.insert(files.begin(), bundles.cbegin(), bundles.cend());
 
         for (vector<string>::iterator fi = files.begin();
              fi != files.end(); ++fi) {
@@ -157,6 +185,7 @@ Files::listLibraryFilesMatching(Filter filter)
 void *
 Files::loadLibrary(string path)
 {
+    path = toFullPath(path);
     void *handle = 0;
 #ifdef _WIN32
 #ifdef UNICODE
