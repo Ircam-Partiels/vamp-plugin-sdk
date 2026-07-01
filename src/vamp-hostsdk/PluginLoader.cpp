@@ -62,7 +62,7 @@ public:
     Impl();
     virtual ~Impl();
 
-    PluginKeyList listPlugins();
+    PluginKeyList listPlugins(bool forceRescan);
     PluginKeyList listPluginsIn(vector<string>);
     PluginKeyList listPluginsNotIn(vector<string>);
 
@@ -158,9 +158,9 @@ PluginLoader::getInstance()
 }
 
 PluginLoader::PluginKeyList
-PluginLoader::listPlugins() 
+PluginLoader::listPlugins(bool forceRescan)
 {
-    return m_impl->listPlugins();
+    return m_impl->listPlugins(forceRescan);
 }
 
 PluginLoader::PluginKeyList
@@ -217,8 +217,13 @@ PluginLoader::Impl::setInstanceToClean(PluginLoader *instance)
 }
 
 PluginLoader::PluginKeyList
-PluginLoader::Impl::listPlugins() 
+PluginLoader::Impl::listPlugins(bool forceRescan)
 {
+    if (forceRescan) {
+        m_allPluginsEnumerated = false;
+        m_pluginLibraryNameMap.clear();
+    }
+        
     if (!m_allPluginsEnumerated) enumeratePlugins(Enumeration());
 
     vector<PluginKey> plugins;

@@ -125,7 +125,7 @@ public:
      * Search for all available Vamp plugins, and return a list of
      * them in the order in which they were found.
      */
-    PluginKeyList listPlugins();
+    PluginKeyList listPlugins(bool forceRescan = false);
 
     /**
      * Search for available Vamp plugins in libraries with the given
