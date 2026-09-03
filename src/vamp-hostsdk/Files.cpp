@@ -81,19 +81,19 @@ toFullPath(string const& path)
 {
     auto const slash = path.find_last_of("/\\");
     auto const start = (slash == std::string::npos) ? 0 : slash + 1;
-    auto const root = path.substr(0, start);
     auto const fileext = path.substr(start);
     auto const dot = fileext.find_last_of(".");
+    if (dot == std::string::npos)
+        return path;
     auto const name = fileext.substr(0, dot);
     auto const ext = fileext.substr(dot);
-    if(ext.find(PLUGIN_BUNDLE_SUFFIX) == 1)
-    {
+    if(ext == std::string(".") + PLUGIN_BUNDLE_SUFFIX) {
 #ifdef _WIN32
-        return path + "\\Content\\x86_64-win\\" + name;
+        return path + "\\Contents\\x86_64-win\\" + name + "." + PLUGIN_SUFFIX;
 #elif __APPLE__
-        return path + "/Contents/MacOS/" + name;
+        return path + "/Contents/MacOS/" + name; // No PLUGIN_SUFFIX in MacOS bundles
 #else
-        return path + "/Contents/x86_64-linux/" + name;
+        return path + "/Contents/x86_64-linux/" + name + "." + PLUGIN_SUFFIX;
 #endif
     }
     return path;
@@ -202,6 +202,9 @@ Files::loadLibrary(string path)
     delete[] buffer;
 #else
     handle = LoadLibrary(path.c_str());
+    if (!handle) {
+        handle = LoadLibraryExA(path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+    }
 #endif
     if (!handle) {
         cerr << "Vamp::HostExt: Unable to load library \""
