@@ -509,16 +509,25 @@ Files::getCurrentWorkingDirectory()
         size = result + 1;
     }
 #else
-    std::vector<char> heapBuffer;
     char localBuffer[1024];
     auto cwd = getcwd(localBuffer, sizeof (localBuffer) - 1);
+    if (cwd != nullptr) {
+        return std::string(cwd);
+    }
+    
     size_t bufferSize = 4096;
-    while (cwd == nullptr && errno == ERANGE) {
+    std::vector<char> heapBuffer(bufferSize);
+    while (bufferSize <= 65536 && errno == ERANGE)
+    {
         heapBuffer.resize(bufferSize);
         cwd = getcwd(heapBuffer.data(), bufferSize - 1);
-        bufferSize += 1024;
+        if (cwd != nullptr) {
+            return std::string(cwd);
+        }
+        bufferSize += 4096;
     }
-    return std::string(cwd);
+    return {};
+    
 #endif
 }
 
