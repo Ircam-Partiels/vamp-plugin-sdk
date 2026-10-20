@@ -75,9 +75,14 @@ Files::listLibraryFiles()
     return listLibraryFilesMatching(Filter());
 }
 
+vector<string>
+Files::listBundles(string dir)
+{
+    return listFiles(dir, PLUGIN_BUNDLE_SUFFIX);
+}
 
-static std::string
-toFullPath(string const& path)
+string
+Files::getBundleLibraryPath(string const& path)
 {
     auto const slash = path.find_last_of("/\\");
     auto const start = (slash == std::string::npos) ? 0 : slash + 1;
@@ -94,6 +99,26 @@ toFullPath(string const& path)
         return path + "/Contents/MacOS/" + name; // No PLUGIN_SUFFIX in MacOS bundles
 #else
         return path + "/Contents/x86_64-linux/" + name + "." + PLUGIN_SUFFIX;
+#endif
+    }
+    return path;
+}
+
+string
+Files::getBundleResourcesPath(string const& path)
+{
+    auto const slash = path.find_last_of("/\\");
+    auto const start = (slash == std::string::npos) ? 0 : slash + 1;
+    auto const fileext = path.substr(start);
+    auto const dot = fileext.find_last_of(".");
+    if (dot == std::string::npos)
+        return path;
+    auto const ext = fileext.substr(dot);
+    if(ext == std::string(".") + PLUGIN_BUNDLE_SUFFIX) {
+#ifdef _WIN32
+        return path + "\\Contents\\Resources";
+#else
+        return path + "/Contents/Resources";
 #endif
     }
     return path;
@@ -185,7 +210,7 @@ Files::listLibraryFilesMatching(Filter filter)
 void *
 Files::loadLibrary(string path)
 {
-    path = toFullPath(path);
+    path = getBundleLibraryPath(path);
     void *handle = 0;
 #ifdef _WIN32
 #ifdef UNICODE

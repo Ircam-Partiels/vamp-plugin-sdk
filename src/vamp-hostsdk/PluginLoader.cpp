@@ -579,6 +579,24 @@ PluginLoader::Impl::generateTaxonomy()
         }
 
         catpath.push_back(dir);
+
+        // Plugin bundles may store the category file within the
+        // directory of the library binary or within the resources
+        // directory of the bundle
+        vector<string> bundles = Files::listBundles(dir);
+        for (vector<string>::iterator bi = bundles.begin();
+             bi != bundles.end(); ++bi) {
+
+            string const bundle = Files::splicePath(dir, *bi);
+
+            string library = Files::getBundleLibraryPath(bundle);
+            string::size_type si = library.find_last_of("/\\");
+            if (si != string::npos) {
+                catpath.push_back(library.substr(0, si));
+            }
+
+            catpath.push_back(Files::getBundleResourcesPath(bundle));
+        }
     }
 
     char buffer[1024];

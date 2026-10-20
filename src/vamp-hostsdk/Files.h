@@ -48,6 +48,25 @@ class Files
 public:
     static std::vector<std::string> listLibraryFiles();
 
+    /**
+     * Return the names of the plugin bundles (with the bundle
+     * extension) in the given directory.
+     */
+    static std::vector<std::string> listBundles(std::string dir);
+
+    /**
+     * Return the path of the library file within a plugin bundle.
+     * If the path does not refer to a bundle, return it unchanged.
+     */
+    static std::string getBundleLibraryPath(std::string const& path);
+
+    /**
+     * Return the path of the resources directory within a plugin
+     * bundle. If the path does not refer to a bundle, return it
+     * unchanged.
+     */
+    static std::string getBundleResourcesPath(std::string const& path);
+
     struct Filter {
         enum { All, Matching, NotMatching } type;
         std::vector<std::string> libraryNames;
