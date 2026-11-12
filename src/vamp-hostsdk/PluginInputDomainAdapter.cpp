@@ -79,6 +79,8 @@ public:
     WindowType getWindowType() const;
     void setWindowType(WindowType type);
 
+    std::vector<float> getWindowCoefficients() const;
+
 protected:
     Plugin *m_plugin;
     float m_inputSampleRate;
@@ -182,6 +184,12 @@ void
 PluginInputDomainAdapter::setWindowType(WindowType w)
 {
     m_impl->setWindowType(w);
+}
+
+std::vector<float>
+PluginInputDomainAdapter::getWindowCoefficients() const
+{
+    return m_impl->getWindowCoefficients();
 }
 
 
@@ -386,6 +394,18 @@ PluginInputDomainAdapter::WindowType
 PluginInputDomainAdapter::Impl::getWindowType() const
 {
     return m_windowType;
+}
+
+std::vector<float>
+PluginInputDomainAdapter::Impl::getWindowCoefficients() const
+{
+    std::vector<float> coefficients;
+    if (!m_window) return coefficients;
+    coefficients.resize(m_window->getSize());
+    for (size_t i = 0; i < coefficients.size(); ++i) {
+        coefficients[i] = float(m_window->getValue(i));
+    }
+    return coefficients;
 }
 
 PluginInputDomainAdapter::Impl::W::WindowType

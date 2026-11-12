@@ -40,6 +40,8 @@
 #include "hostguard.h"
 #include "PluginWrapper.h"
 
+#include <vector>
+
 _VAMP_SDK_HOSTSPACE_BEGIN(PluginInputDomainAdapter.h)
 
 namespace Vamp {
@@ -221,6 +223,19 @@ public:
      * Set the current window shape.
      */
     void setWindowType(WindowType type);
+
+    /**
+     * Return the coefficients of the window applied to each block of
+     * audio before the FFT (one coefficient per sample of the block).
+     * They allow the host to inform the plugin of the scaling of the
+     * frequency-domain input (e.g. the sum of the coefficients is the
+     * gain of the window for a sinusoid).
+     *
+     * The window depends on the window shape and on the block size,
+     * so this function returns an empty vector before initialise()
+     * has been called or if the plugin expects time-domain input.
+     */
+    std::vector<float> getWindowCoefficients() const;
 
 
 protected:
